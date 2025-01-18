@@ -5,6 +5,7 @@ import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
 import polyline
+import math
 # Load environment variables
 load_dotenv()
 
@@ -13,8 +14,10 @@ API_KEY = os.getenv('API_KEY')  # Ensure your .env file contains your API key
 BASE_URL = 'https://api.openrouteservice.org/'
 
 # Coordinates: [longitude, latitude]
-origin = [-80.524495, 43.474348]  # Example: Some place in Waterloo
-destination = [-80.536208, 43.470579]  # Example: Another place in Waterloo
+# origin = [-80.524495, 43.474348]  # Example: Some place in Waterloo
+# destination = [-80.536208, 43.470579]  # Example: Another place in Waterloo
+origin = [-79.380085, 43.654380]  # Example: Some place in Toronto
+destination = [-79.400592, 43.664913]  # Example: Another place in Toronto
 
 # Function to get a route between origin and destination (Single Threaded)
 # def get_route(origin, destination, waypoints=None, avoid_features=None):
@@ -55,7 +58,9 @@ def fetch_route(origin, destination, waypoint, avoid_features=None):
         'coordinates': coords,
         'options': {
             'avoid_features': avoid_features or []
-        }
+        },
+        "continue_straight": "true",
+        "radiuses": [2,754,2]
     }
     headers = {
         'Authorization': API_KEY
@@ -86,19 +91,37 @@ def get_route(origin, destination, waypoints, avoid_features=None):
     return results
 
 # Generate random waypoints near a midpoint
-def generate_random_waypoints(midpoint, radius, count):
+def calculate_vectors(origin, destination):
+    # Vector v1 (between origin and destination)
+    v1 = [destination[0] - origin[0], destination[1] - origin[1]]
+    
+    # Perpendicular vector v2 (90-degree rotation of v1)
+    v2 = [-v1[1], v1[0]]  # Rotate v1 counterclockwise 90 degrees
+    
+    return v1, v2
+
+# Function to generate random points inside the ellipse
+def generate_random_point_in_ellipse(midpoint, v1, v2, r1, r2):
+    # Generate a random angle between 0 and 2*pi
+    theta = random.uniform(0, 2 * math.pi)
+    
+    # Random scaling factors for r1 and r2
+    scale_r1 = random.uniform(-r1, r1)
+    scale_r2 = random.uniform(-r2, r2)
+    
+    # Calculate point using parametric form of the ellipse
+    x = midpoint[0] + scale_r1 * (v1[0] / math.hypot(v1[0], v1[1])) + scale_r2 * (v2[0] / math.hypot(v2[0], v2[1]))
+    y = midpoint[1] + scale_r1 * (v1[1] / math.hypot(v1[0], v1[1])) + scale_r2 * (v2[1] / math.hypot(v2[0], v2[1]))
+    
+    return [x, y]
+
+# Function to generate random waypoints inside the elliptical area
+def generate_random_waypoints(midpoint, v1, v2, r1, r2, count):
     points = []
     for _ in range(count):
-        # Generate a random coordinate within the radius
-        offset_lon = random.uniform(-radius, radius)
-        offset_lat = random.uniform(-radius, radius)
-        point = [midpoint[0] + offset_lon, midpoint[1] + offset_lat]
-
-        # Snap the point to the road network using the Snap API
+        point = generate_random_point_in_ellipse(midpoint, v1, v2, r1, r2)
         points.append(point)
-    snapped_points = snap_to_road(points, radius)
-   
-
+    snapped_points = snap_to_road(points)
     return snapped_points
 
 # Function to snap a point to the road network
@@ -107,7 +130,7 @@ def snap_to_road(points, radius=350):
     
     body = {
         "locations": points,
-        "radius": 350
+        "radius": radius, 
     }
     
     headers = {
@@ -122,7 +145,7 @@ def snap_to_road(points, radius=350):
         if 'locations' in snapped_point and snapped_point['locations']:
             snapped_locations = []
             for location in snapped_point['locations']:
-                print(f"Snapped Location: {location['location']}")
+                print(f"{location['location']},")
                 snapped_locations.append(location['location'])
             return snapped_locations
         else:
@@ -134,11 +157,15 @@ def snap_to_road(points, radius=350):
 
 # Generate an arbitrary number of routes
 def route_generator(origin, destination):
-    
+    v1, v2 = calculate_vectors(origin, destination)
+    midpoint = [(origin[0] + destination[0]) / 2, (origin[1] + destination[1]) / 2]
     waypoint = generate_random_waypoints(
-        midpoint=[(origin[0] + destination[0]) / 2, (origin[1] + destination[1]) / 2],
-        radius=0.001,
-        count=10
+        midpoint=midpoint,
+        v1=v1,
+        v2=v2,
+        r1=0.001,
+        r2 = 0.004,
+        count=7
     )
     routes = get_route(origin, destination, waypoints=waypoint)
         
