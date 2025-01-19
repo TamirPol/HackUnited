@@ -9,7 +9,7 @@ export default function App() {
 
 
   return (
-    <View style = {wrapper}>
+    <View>
       
       <TextInput
         style={styles.input}
@@ -22,9 +22,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  wrapper:{
-    position: 'absolute'
-  },
+  
   label: {
     fontSize: 16,
     marginBottom: 10,

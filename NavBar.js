@@ -42,12 +42,15 @@ const styles = StyleSheet.create({
     },
 
  dragdown: {
+  
     borderRadius: 50,
     height: '5%',
     width: '5%',
+    left : '50% - width',
     backgroundColor: "red",
     alignContent: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    position: 'relative'
 
  }
 });
