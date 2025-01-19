@@ -47,7 +47,8 @@ def fetch_route(origin, destination, waypoint, avoid_features=None):
             'avoid_features': avoid_features or []
         },
         "continue_straight": "true",
-        "radiuses": [2,754,2]
+        "radiuses": [2,754,2],
+        
     }
     headers = {
         'Authorization': API_KEY
@@ -238,16 +239,6 @@ def route_reader_for_index(routes, filename="test.json"):
         bigSet = {}
         try: 
             route_response = route.json()
-            # Extract the coordinates
-            geometry = route_response["routes"][0]["geometry"]
-            coordinates = polyline.decode(geometry)
-            summary = route_response['routes'][0]['summary']
-            duration = summary['duration']  # Total duration in seconds
-            distance = summary['distance']  # Total distance in meters
-
-            directions = [] # directions for each route
-            segments = route_response['routes'][0]['segments']
-            
             # Extract detailed directions
             directions = []
             segments = route_response['routes'][0]['segments']
@@ -260,13 +251,21 @@ def route_reader_for_index(routes, filename="test.json"):
                     road_name = step.get('name', 'Unknown road')
                     
                     # Build a readable sentence
-                    direction_text = (
-                        f"{instruction} {f'onto {road_name}' if not road_name else ''}"
-                        f"in {distance:.0f} meters "
-                        f"({duration:.0f} seconds)."
-                    )
-                    directions.append(direction_text)
-            
+                    if distance != 0 and duration != 0:
+                        direction_text = (
+                            f"{instruction} {f'onto {road_name}' if not road_name else ''}"
+                            f"in {distance:.0f} meters "
+                            f"({duration:.0f} seconds)."
+                        )
+                        directions.append(direction_text)
+
+            # Extract the coordinates
+            geometry = route_response["routes"][0]["geometry"]
+            coordinates = polyline.decode(geometry)
+            summary = route_response['routes'][0]['summary']
+            duration = summary['duration']  # Total duration in seconds
+            distance = summary['distance']  # Total distance in meters
+
             bigSet["duration"] = duration
             bigSet["distance"] = distance
             bigSet["coordinates"] = coordinates
@@ -278,12 +277,5 @@ def route_reader_for_index(routes, filename="test.json"):
             print(f"Error: Route data format is incorrect: {e}")
             print(route)  # Log problematic route for debugging
         route_data.append(bigSet)
-    
-    with open(filename, "w") as file:
-        json.dump(route_data, file)
-    print(f"Route data saved to {filename}")
 
-# Example usage after generating routes
-routes = route_generator(origin, destination)
-# save_routes_to_file(routes)
-route_reader_for_index(routes)
+    return route_data

@@ -1,46 +1,36 @@
 import folium
-import json
 
-# Load the JSON file with route data
-with open("routes.json", "r") as file:
-    routes = json.load(file)
+def plot_best_route(route_data, output_file="best_route_map.html"):
+    """
+    Plots the best route on a Folium map and saves it as an HTML file.
 
-# New snapped locations
-snapped_locations = [
-   [-79.390709, 43.657012],
-[-79.389945, 43.660201],
-[-79.391356, 43.659777],
-[-79.389635, 43.662421],
-[-79.388451, 43.661473],
-[-79.389967, 43.662347],
-[-79.389384, 43.65961]
-]
+    Args:
+        route_data (dict): Dictionary containing the route information, including 'coordinates' as a list of [latitude, longitude] pairs.
+        output_file (str): Name of the output HTML file to save the map.
+    """
+    # Extract the coordinates of the best route
+    best_route = route_data['coordinates']
 
-# Create a base map centered around the first route's starting point
-start_point = routes[0][0]  # First route's first point
-m = folium.Map(location=start_point, zoom_start=14)
+    # Validate the structure of the best route
+    if not isinstance(best_route, list) or not all(isinstance(item, tuple) and len(item) == 2 for item in best_route):
+        raise ValueError("'coordinates' must be a list of [latitude, longitude] pairs.")
 
-# Add each route to the map
-for route in routes:
+    # Create a base map centered around the first point of the best route
+    start_point = best_route[0]
+    m = folium.Map(location=start_point, zoom_start=14)
+
+    # Add the best route to the map
     folium.PolyLine(
-        locations=route,  # Route is a list of [latitude, longitude] pairs
+        locations=best_route,  # Route is a list of [latitude, longitude] pairs
         color="blue",
-        weight=3,
+        weight=5,
         opacity=0.8
     ).add_to(m)
 
-    # Optionally, add markers for the start and end points
-    folium.Marker(location=route[0], popup="Route Start", icon=folium.Icon(color="green")).add_to(m)
-    folium.Marker(location=route[-1], popup="Route End", icon=folium.Icon(color="red")).add_to(m)
+    # Add markers for the start and end points of the best route
+    folium.Marker(location=best_route[0], popup="Start", icon=folium.Icon(color="green")).add_to(m)
+    folium.Marker(location=best_route[-1], popup="End", icon=folium.Icon(color="red")).add_to(m)
 
-# Add snapped locations to the map
-for loc in snapped_locations:
-    folium.Marker(
-        location=[loc[1], loc[0]],  # Folium expects [latitude, longitude]
-        popup=f"Snapped Location: {loc}",
-        icon=folium.Icon(color="purple", icon="info-sign")
-    ).add_to(m)
-
-# Save the map to an HTML file
-m.save("routes_and_new_snapped_locations_map.html")
-print("Map saved to routes_and_new_snapped_locations_map.html")
+    # Save the map to an HTML file
+    m.save(output_file)
+    print(f"Map saved to {output_file}")
