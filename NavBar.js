@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react';
 import { StyleSheet, View, PanResponder, Dimensions } from 'react-native';
-
+import EmergencyBut from './EmergencyBut';
 const { height } = Dimensions.get('window');
 
 export default function NavBar() {
-  const [viewHeight, setViewHeight] = useState(height / 50); // Initial height of the draggable View
+  
 
   // PanResponder to handle dragging
   const panResponder = useRef(
@@ -23,11 +23,7 @@ export default function NavBar() {
 
   return (
     <View style = {styles.pullDownTab}>
-        <View style = {styles.dragdown}>
-
-
-        </View>
-
+    <EmergencyBut/>
     </View>
   );
 }
@@ -36,9 +32,10 @@ const styles = StyleSheet.create({
     pullDownTab:{
         position: 'absolute',
         width  : '100%',
-        height : '50%',
-        backgroundColor: "gray",
-        bottom : '0'
+        height : '20%',
+        backgroundColor: "#f1f0e4",
+        bottom : '0',
+        
     },
 
  dragdown: {
