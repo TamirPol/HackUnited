@@ -1,3 +1,5 @@
 .env
 routes.json
 routes_and_new_snapped_locations_map.html
+.venv
+__pycache__
