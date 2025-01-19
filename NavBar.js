@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { StyleSheet, View, PanResponder, Dimensions } from 'react-native';
 import EmergencyBut from './EmergencyBut';
 const { height } = Dimensions.get('window');
-
+import Route from './Route';
 export default function NavBar() {
   
 
@@ -23,6 +23,9 @@ export default function NavBar() {
 
   return (
     <View style = {styles.pullDownTab}>
+      <Route name={'Best'}/>
+                  <Route name={'Fastest'}/>
+                  <Route name={'Alternate'}/>
     <EmergencyBut/>
     </View>
   );
@@ -32,7 +35,7 @@ const styles = StyleSheet.create({
     pullDownTab:{
         position: 'absolute',
         width  : '100%',
-        height : '20%',
+        height : '30%',
         backgroundColor: "#f1f0e4",
         bottom : '0',
         

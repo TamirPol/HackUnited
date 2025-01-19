@@ -6,18 +6,13 @@ import * as Location from 'expo-location';
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
-export default function App() {
+export default function App({ onSubmit }) {
   const [text, setText] = useState(''); // User input
   const [searchResult, setSearchResult] = useState(""); // To store search result
   const [startVal, setStartVal] = useState(); // Use state for startVal
-  const origin = { latitude: 43.654380, longitude: -79.380085 }
-  // Request location permission before using geocoding
-  // const requestLocationPermission = async () => {
-  //   const { status } = await Location.requestForegroundPermissionsAsync();
-  //   if (status !== 'granted') {
-  //     alert('Permission to access location was denied');
-  //   }
-  // };
+  const [lat, setLat] = useState([]);
+  const [long, setLong] = useState([]);
+  const origin = { latitude: 43.654380, longitude: -79.380085 };
 
   // Convert address to latitude and longitude
   const convertToLatLong = async (address) => {
@@ -28,8 +23,10 @@ export default function App() {
         if (result.length > 0) {
           console.log('Latitude:', result[0].latitude);
           console.log('Longitude:', result[0].longitude);
-          setStartVal({ latitude: result[0].latitude, longitude: result[0].longitude }); // Update startVal using setState
-          setSearchResult([result[0].longitude, result[0].latitude]); // Store the result in searchResult
+          setLat(result[0].latitude);
+          setLong(result[0].longitude);
+          setStartVal({ latitude: result[0].latitude, longitude: result[0].longitude });
+          setSearchResult([result[0].longitude, result[0].latitude]); // Store the coordinates as search result
         } else {
           alert('No results found for the address');
         }
@@ -43,18 +40,28 @@ export default function App() {
   // Handle search button press
   const handleSearch = async () => {
     if (text) {
-      setSearchResult(text); // Store the searched result in a variable
+      // Start geocoding the address
       await convertToLatLong(text); // Await the geocoding process
-      console.log('Searched:', text); // Log the search result (for debugging)
+      console.log('Searched:', text);
+
+      // Only trigger onSubmit once searchResult is updated
     } else {
       alert("Please enter a valid address");
     }
   };
 
-  // Request permission on initial load
-  // useEffect(() => {
-  //   requestLocationPermission();
-  // }, []);
+  // UseEffect to track changes in searchResult and trigger onSubmit
+  useEffect(() => {
+    if (searchResult) {
+      console.log("SearchResult updated:", searchResult);
+      if (onSubmit) {
+        console.log('Triggering onSubmit with updated result:', searchResult); // Using the updated state
+        onSubmit(searchResult); // Pass the updated result
+      } else {
+        console.error('onSubmit is not defined!');
+      }
+    }
+  }, [searchResult]); // This will only run when searchResult is updated
 
   return (
     <View style={styles.container}>

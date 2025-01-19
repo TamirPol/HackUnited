@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     paddingVertical: "7%",
     paddingHorizontal: "5%",
     borderRadius: 25,
-    backgroundColor: 'red',
+    backgroundColor: 'darkred',
   },
   emergencyButton: {
     left: '5%', // Align the "Emergency" button to the left
