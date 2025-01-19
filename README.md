@@ -1,4 +1,4 @@
-# idontwannagetstabbed.com
+# idontwannagetstabbed
 
 ## Inspiration
 The idea for this project was born from a shared concern for personal safety during nighttime commutes. Many of us, including one of our team members, have experienced the anxiety of walking home alone, especially in unfamiliar areas or neighborhoods with higher crime rates. To alleviate this pressure, we created a solution that empowers users to make informed decisions about their routes, prioritizing both safety and efficiency.
