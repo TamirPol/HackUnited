@@ -19,38 +19,25 @@ BASE_URL = 'https://api.openrouteservice.org/'
 origin = [-79.380085, 43.654380]  # Example: Some place in Toronto
 destination = [-79.400592, 43.664913]  # Example: Another place in Toronto
 
-# Function to get a route between origin and destination (Single Threaded)
-# def get_route(origin, destination, waypoints=None, avoid_features=None):
-#     random_routes = []
-#     for waypoint in waypoints:
-#         coords = ([origin] + [waypoint] + [destination])
-    
-#         # Define the URL for the directions API
-#         url = BASE_URL + 'v2/directions/foot-walking'
-        
-#         # Define the payload (coordinates and options)
-#         payload = {
-#             'coordinates': coords,
-#             'options': {
-#                 'avoid_features': avoid_features or []
-#             }
-#         }
-        
-#         # Send the request with API key
-#         headers = {
-#             'Authorization': API_KEY
-#         }
-        
-#         response = requests.post(url, json=payload, headers=headers)
-    
-#     # Parse the response
-#         if response.status_code == 200:
-#             random_routes.append(response)
-#         else:
-#             print(f"Error: {response.status_code}, {response.text}")
-#     return random_routes
+def fetch_route_no_waypoints(origin, destination, avoid_features=None):
+    url = BASE_URL + 'v2/directions/foot-walking'
+    payload = {
+        'coordinates': [origin, destination],  # Direct coordinates between origin and destination
+        'options': {
+            'avoid_features': avoid_features or []
+        }
+    }
+    headers = {
+        'Authorization': API_KEY
+    }
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 200:
+        print(response)
+        return response
+    else:
+        print(f"Error: {response.status_code}, {response.text}")
+        return None
 
-# Function to fetch a route for a specific waypoint
 def fetch_route(origin, destination, waypoint, avoid_features=None):
     coords = [origin, waypoint, destination]  # Include the waypoint
     url = BASE_URL + 'v2/directions/foot-walking'
@@ -100,27 +87,38 @@ def calculate_vectors(origin, destination):
     
     return v1, v2
 
-# Function to generate random points inside the ellipse
-def generate_random_point_in_ellipse(midpoint, v1, v2, r1, r2):
-    # Generate a random angle between 0 and 2*pi
-    theta = random.uniform(0, 2 * math.pi)
-    
-    # Random scaling factors for r1 and r2
-    scale_r1 = random.uniform(-r1, r1)
-    scale_r2 = random.uniform(-r2, r2)
-    
-    # Calculate point using parametric form of the ellipse
-    x = midpoint[0] + scale_r1 * (v1[0] / math.hypot(v1[0], v1[1])) + scale_r2 * (v2[0] / math.hypot(v2[0], v2[1]))
-    y = midpoint[1] + scale_r1 * (v1[1] / math.hypot(v1[0], v1[1])) + scale_r2 * (v2[1] / math.hypot(v2[0], v2[1]))
-    
-    return [x, y]
-
 # Function to generate random waypoints inside the elliptical area
 def generate_random_waypoints(midpoint, v1, v2, r1, r2, count):
+    """
+    Generates n points uniformly distributed along a line parallel to v2,
+    passing through the midpoint, and spanning a total length of 2 * r2.
+
+    :param midpoint: The center point of the line (the midpoint where the line intersects).
+    :param v2: The direction vector of the line.
+    :param r2: The semi-minor axis length (spanning from -r2 to r2).
+    :param n: The number of points to generate.
+    :return: A list of n points along the line.
+    """
     points = []
-    for _ in range(count):
-        point = generate_random_point_in_ellipse(midpoint, v1, v2, r1, r2)
-        points.append(point)
+    
+    # Normalize the v2 direction vector
+    length_v2 = math.hypot(v2[0], v2[1])  # Length of v2
+    v2_normalized = [v2[0] / length_v2, v2[1] / length_v2]  # Unit vector in the direction of v2
+    
+    # Calculate the distance between points
+    step_size = 2 * r2 / (count - 1)  # Evenly distribute points between -r2 and +r2
+    
+    # Generate the n points
+    for i in range(count):
+        # Calculate the distance from the midpoint for this point
+        distance = -r2 + i * step_size
+        
+        # Calculate the new point by moving from the midpoint along the direction of v2
+        x = midpoint[0] + distance * v2_normalized[0]
+        y = midpoint[1] + distance * v2_normalized[1]
+        
+        points.append([x, y])
+    
     snapped_points = snap_to_road(points)
     return snapped_points
 
@@ -168,7 +166,8 @@ def route_generator(origin, destination):
         count=7
     )
     routes = get_route(origin, destination, waypoints=waypoint)
-        
+    # print(routes)
+    routes.append(fetch_route_no_waypoints(origin, destination))
     return routes
 
 # Print routes for debugging purposes
@@ -233,6 +232,58 @@ def save_routes_to_file(routes, filename="routes.json"):
         json.dump(route_data, file)
     print(f"Route data saved to {filename}")
 
+def route_reader_for_index(routes, filename="test.json"):
+    route_data = []
+    for route in routes:
+        bigSet = {}
+        try: 
+            route_response = route.json()
+            # Extract the coordinates
+            geometry = route_response["routes"][0]["geometry"]
+            coordinates = polyline.decode(geometry)
+            summary = route_response['routes'][0]['summary']
+            duration = summary['duration']  # Total duration in seconds
+            distance = summary['distance']  # Total distance in meters
+
+            directions = [] # directions for each route
+            segments = route_response['routes'][0]['segments']
+            
+            # Extract detailed directions
+            directions = []
+            segments = route_response['routes'][0]['segments']
+            for segment in segments:
+                for step in segment['steps']:
+                    # Format the string with key information
+                    instruction = step.get('instruction', 'No instruction available')
+                    distance = step.get('distance', 0)  # Distance in meters
+                    duration = step.get('duration', 0)  # Duration in seconds
+                    road_name = step.get('name', 'Unknown road')
+                    
+                    # Build a readable sentence
+                    direction_text = (
+                        f"{instruction} {f'onto {road_name}' if not road_name else ''}"
+                        f"in {distance:.0f} meters "
+                        f"({duration:.0f} seconds)."
+                    )
+                    directions.append(direction_text)
+            
+            bigSet["duration"] = duration
+            bigSet["distance"] = distance
+            bigSet["coordinates"] = coordinates
+            bigSet["directions"] = directions
+        except KeyError as e:
+            print(f"Error extracting route data: {e}")
+            print(route)  # Log problematic route for debugging
+        except TypeError as e:
+            print(f"Error: Route data format is incorrect: {e}")
+            print(route)  # Log problematic route for debugging
+        route_data.append(bigSet)
+    
+    with open(filename, "w") as file:
+        json.dump(route_data, file)
+    print(f"Route data saved to {filename}")
+
 # Example usage after generating routes
 routes = route_generator(origin, destination)
-save_routes_to_file(routes)
+# save_routes_to_file(routes)
+route_reader_for_index(routes)
