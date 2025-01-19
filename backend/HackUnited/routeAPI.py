@@ -16,8 +16,7 @@ BASE_URL = 'https://api.openrouteservice.org/'
 # Coordinates: [longitude, latitude]
 # origin = [-80.524495, 43.474348]  # Example: Some place in Waterloo
 # destination = [-80.536208, 43.470579]  # Example: Another place in Waterloo
-origin = [-79.380085, 43.654380]  # Example: Some place in Toronto
-destination = [-79.400592, 43.664913]  # Example: Another place in Toronto
+  # Example: Another place in Toronto
 
 def fetch_route_no_waypoints(origin, destination, avoid_features=None):
     url = BASE_URL + 'v2/directions/foot-walking'
@@ -47,7 +46,8 @@ def fetch_route(origin, destination, waypoint, avoid_features=None):
             'avoid_features': avoid_features or []
         },
         "continue_straight": "true",
-        "radiuses": [2,754,2]
+        "radiuses": [-1,754,-1],
+        
     }
     headers = {
         'Authorization': API_KEY
@@ -140,11 +140,15 @@ def snap_to_road(points, radius=350):
     response = requests.post(url, json=body, headers=headers)
     if response.status_code == 200:
         snapped_point = response.json()
+        print(snapped_point)
+        print('HIIIII')
         if 'locations' in snapped_point and snapped_point['locations']:
             snapped_locations = []
             for location in snapped_point['locations']:
-                print(f"{location['location']},")
-                snapped_locations.append(location['location'])
+                if location:
+                    print(f"{location['location']},")
+                    snapped_locations.append(location['location'])
+                    print('done')
             return snapped_locations
         else:
             print(f"Failed to snap point: {points}")
@@ -276,12 +280,6 @@ def route_reader_for_index(routes, filename="test.json"):
             print(f"Error: Route data format is incorrect: {e}")
             print(route)  # Log problematic route for debugging
         route_data.append(bigSet)
-    
-    with open(filename, "w") as file:
-        json.dump(route_data, file)
-    print(f"Route data saved to {filename}")
 
-# Example usage after generating routes
-routes = route_generator(origin, destination)
-# save_routes_to_file(routes)
-route_reader_for_index(routes)
+    return route_data
+

@@ -1,5 +1,5 @@
-.env
-routes.json
-routes_and_new_snapped_locations_map.html
-.venv
-__pycache__
+node_modules/
+__pycache__/
+.expo/
+.vscode/
+assets/
