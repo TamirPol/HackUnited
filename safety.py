@@ -73,14 +73,9 @@ def rerank(routes):
                      }
     return final
 
-
-routes = route_generator(origin, destination)
-# save_routes_to_file(routes)
-lst = route_reader_for_index(routes)
-output = rerank(lst)
-plot_best_route(output['best'])
-
-plot_best_route(output['alternatives'][0], output_file='alt1.html')
-
-plot_best_route(output['alternatives'][1], output_file='alt2.html')
-plot_best_route(output['alternatives'][2], output_file='alt3.html')
+def main(o, d):
+    routes = route_generator(o, d)
+    # save_routes_to_file(routes)
+    lst = route_reader_for_index(routes)
+    output = rerank(lst)
+    return output

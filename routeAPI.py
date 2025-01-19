@@ -47,7 +47,7 @@ def fetch_route(origin, destination, waypoint, avoid_features=None):
             'avoid_features': avoid_features or []
         },
         "continue_straight": "true",
-        "radiuses": [2,754,2],
+        "radiuses": [5,754,5],
         
     }
     headers = {
