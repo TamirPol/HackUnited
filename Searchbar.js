@@ -52,9 +52,9 @@ export default function App() {
   };
 
   // Request permission on initial load
-  useEffect(() => {
-    requestLocationPermission();
-  }, []);
+  // useEffect(() => {
+  //   requestLocationPermission();
+  // }, []);
 
   return (
     <View style={styles.container}>
